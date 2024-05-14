@@ -1,0 +1,13 @@
+name = "LikelihoodHistograms"
+uuid = "0bf0ee65-3559-4d1e-a282-1b0e88839781"
+authors = ["Oskar Høgberg Simensen"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.6.7"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
