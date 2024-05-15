@@ -1,4 +1,4 @@
-using Distributions, Random, FHist, BenchmarkTools, SpecialFunctions, StatsBase
+using Distributions, Random, FHist, BenchmarkTools, SpecialFunctions, StatsBase, Plots
 
 include("objective_functions.jl")
 
@@ -10,7 +10,7 @@ Create a regular histogram based on optimization of a likelihood-based criterion
 ...
 # Arguments
 - `x::AbstractArray`: The data for which a histogram is to be constructed.
-- `rule::Str="br"`: The criterion used to determine the optimal number of bins. Defaults to the method of 
+- `rule::String="br"`: The criterion used to determine the optimal number of bins. Defaults to the method of 
 Birgé and Rozenholc.
 - `maxbins`: The maximal number of bins to be considered by the optimization criterion. Ignored if the specified
 argument is not a positive integer. Defaults to `k_max = floor(Int, n/log(n))`
@@ -18,13 +18,13 @@ argument is not a positive integer. Defaults to `k_max = floor(Int, n/log(n))`
 is "bayes". Defaults to Jeffreys improper prior on the positive integers, p(k) ∝ 1/k
 ...
 """
-function histogram_regular(x::AbstractArray, rule::Str="br", maxbins=Nothing, logprior=k->-log(k))
+function histogram_regular(x::AbstractArray; rule::String="br", maxbins::Integer=-1, logprior=k->-log(k))
     rule = lowercase(rule)
     if !(rule in ["aic", "bic", "br", "bayes", "mdl", "sc", "klcv", "nml"])
         rule = "br"
     end
 
-    n = length(y)
+    n = length(x)
     if isinteger(maxbins) && maxbins >= 1 
         k_max = maxbins
     else
@@ -35,80 +35,67 @@ function histogram_regular(x::AbstractArray, rule::Str="br", maxbins=Nothing, lo
     # Scale data to the interval [0,1]:
     xmin = minimum(x)
     xmax = maximum(x)
-    z = (x - xmin) / (xmax - xmin)
+    z = @. (x - xmin) / (xmax - xmin)
 
     if rule == "aic"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
-            criterion[k] = compute_AIC(N, k, n)
+            criterion[k] = -compute_AIC(N, k, n) # Note: negative of AIC is computed
         end
-        k_opt = argmin(criterion) # Minimization as per usual
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = H_opt.weights / n # cell probabilities
-        H_opt.isdensity = true
     elseif rule == "bic"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
-            criterion[k] = compute_BIC(N, k, n)
+            criterion[k] = -compute_BIC(N, k, n) # Note: negative of BIC is computed
         end
-        k_opt = argmin(criterion) # Minimization as per usual
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = H_opt.weights / n
-        H_opt.isdensity = true
     elseif rule == "br"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
             criterion[k] = compute_BR(N, k, n)
         end
-        k_opt = argmax(criterion) # maximization as in Birge and Rozenholc (2006)
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = H_opt.weights / n
-        H_opt.isdensity = true
     elseif rule == "bayes"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
-            criterion[k] = logposterior_k(N, k, a, p0, n, logprior)
+            criterion[k] = logposterior_k(N, k, 0.5*k, ones(k)/k, n, logprior)
         end
-        k_opt = argmax(criterion)
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = (H_opt.bincounts .+ 0.5) / (0.5*k_opt + n) # Bayes estimate of cellprob
-        H_opt.isdensity = true
     elseif rule == "mdl"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
-            criterion[k] = compute_MDL(N, k, a, p0, n, logprior)
+            criterion[k] = compute_MDL(N, k, n)
         end
-        k_opt = argmax(criterion)
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = H_opt.bincounts / n
-        H_opt.isdensity = true
     elseif rule == "sc"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
-            criterion[k] = compute_SC(N, k, a, p0, n, logprior)
+            criterion[k] = compute_SC(N, k, n)
         end
-        k_opt = argmax(criterion)
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = H_opt.bincounts / n
-        H_opt.isdensity = true
     elseif rule == "klcv"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
-            criterion[k] = compute_KLCV(N, k, a, p0, n, logprior)
+            criterion[k] = compute_KLCV(N, k, n)
         end
-        k_opt = argmax(criterion)
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = H_opt.bincounts / n
-        H_opt.isdensity = true
     elseif rule == "klcv"
         for k = 1:k_max
             N = Hist1D(z; binedges = LinRange(0,1,k+1), overflow=true).bincounts
-            criterion[k] = compute_NML(N, k, a, p0, n, logprior)
+            criterion[k] = compute_NML(N, k, n)
         end
-        k_opt = argmax(criterion)
-        H_opt = convert(Histogram, Hist1D(z; binedges = xmin+(xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
-        H_opt.weights = H_opt.bincounts / n
-        H_opt.isdensity = true
     end
+
+    # Create a StatsBase.Histogram object with the chosen number of bins
+    k_opt = argmax(criterion)
+    H_opt = convert(Histogram, Hist1D(x; binedges = xmin .+ (xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
+    if rule == "bayes"
+        H_opt.weights = k_opt * (H_opt.weights .+ 0.5) / (0.5*k_opt + n) # Estimated density
+    else
+        H_opt.weights = k_opt * H_opt.weights / n # Estimated density
+    end
+    H_opt.isdensity = true
     return H_opt
 end
+
+
+function test_reghist()
+    x = rand(Normal(), 10^4)
+    H = histogram_regular(x; rule="bic")
+    plot(H, alpha=0.5)
+end
+
+test_reghist()
