@@ -1,9 +1,9 @@
-using Distributions, Random, FHist, BenchmarkTools, SpecialFunctions, StatsBase, Plots
+using Distributions, Random, FHist, SpecialFunctions, StatsBase, Plots
 
 include("objective_functions.jl")
 
 """
-    histogram_regular(h::Hist1D, rule::Str="br", maxbins=Nothing, logprior::Fu=k->-log(k))
+    histogram_regular(h::Hist1D, rule::Str="br", maxbins=Nothing, logprior=k->-log(k))
 
 Create a regular histogram based on optimization of a likelihood-based criterion. Returns a StatsBase.Histogram object
 
@@ -25,10 +25,10 @@ function histogram_regular(x::AbstractArray; rule::String="br", maxbins::Integer
     end
 
     n = length(x)
-    if isinteger(maxbins) && maxbins >= 1 
+    if maxbins >= 1 
         k_max = maxbins
     else
-        k_max = floor(Int, n / log(n)) # Maximal number of bins
+        k_max = max(floor(Int, n / log(n)), 10^3) # Default maximal number of bins
     end
     criterion = zeros(k_max) # Criterion to be maximized/minimized depending on the penalty
 
@@ -93,8 +93,13 @@ end
 
 
 function test_reghist()
-    x = rand(Normal(), 10^4)
-    H = histogram_regular(x; rule="bic")
+    x = rand(Normal(), 10^7)
+    #H = Hist1D(x)
+    #plot(H)
+    H = histogram_regular(x; rule="bayes")
+    println(length(H.weights))
+    H2 = histogram_regular(x; rule="bic")
+    println(length(H2.weights))
     plot(H, alpha=0.5)
 end
 
