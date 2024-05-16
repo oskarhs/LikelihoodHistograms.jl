@@ -10,7 +10,7 @@ function dynamic_algorithm(phi::Function, n::Int, k_max::Int)
         ancestor0 = Array{Int64}(undef, n-k+1)
         cum_weight0 = Array{Float64}(undef, n-k+1)
 
-        for i = k:n
+        @inbounds for i = k:n
             obj = cum_weight[(k-1):(i-1), k-1] .+ weight[k:i, i+1]
             ancestor0[i-k+1] = argmax(obj)
             cum_weight0[i-k+1] = obj[ancestor0[i-k+1]]
@@ -47,21 +47,28 @@ function compute_bounds(ancestor, grid, k)
 end
 
 function phi_penB(i, j, N_cum, grid)
-    N_bin = N_cum[j] - N_cum[i]
-    len_bin = grid[j] - grid[i]
+    @inbounds N_bin = N_cum[j] - N_cum[i]
+    @inbounds len_bin = grid[j] - grid[i]
     contrib = N_bin * log(N_bin / len_bin) # Contribution of the given bin to log-likelihood
     return contrib
 end
 
 function phi_bayes(i, j, N_cum, grid)
-    N_bin = N_cum[j] - N_cum[i]
-    len_bin = grid[j] - grid[i] # Note: p0 = len_bin on the interval 0-1
+    @inbounds N_bin = N_cum[j] - N_cum[i]
+    @inbounds len_bin = grid[j] - grid[i] # Note: p0 = len_bin on the interval 0-1
     contrib = loggamma(1.0*len_bin + N_bin) - loggamma(1.0*len_bin) - N_bin * log(len_bin)
     return contrib
 end
 
+function phi_penR(i, j, N_cum, grid, n)
+    @inbounds N_bin = N_cum[j] - N_cum[i]
+    @inbounds len_bin = grid[j] - grid[i]
+    contrib = N_bin * log(N_bin / len_bin) - 0.5 * N_bin / (n*len_bin)
+    return contrib
+end
 
-function histogram_irregular(x::AbstractArray; rule::String="penB", maxbins::Int=-1, logprior=k->-log(k))
+function histogram_irregular(x::AbstractArray; rule::String="penB", right::Bool=true,
+                            maxbins::Int=-1, logprior=k->-log(k))
     rule = lowercase(rule)
 
     xmin = minimum(x)
@@ -73,19 +80,28 @@ function histogram_irregular(x::AbstractArray; rule::String="penB", maxbins::Int
     k_max = n
 
     # Calculate gridpoints (left-open grid, breaks at data points)
-    grid = y[1:n-1] .- eps()
-    push!(grid, 0.5*(y[n-1]+y[n]))
-    push!(grid, y[n]+eps())
-    unique!(grid) 
+    grid = zeros(n+1)
+    if right
+        grid[1] = y[1] - eps()
+        grid[2] = 0.5*(y[1]+y[2])
+        grid[3:n+1] = y[2:n] .+ eps()
+    else
+        grid[1:n-1] = y[1:n-1] .- eps()
+        grid[n] = 0.5 * (y[n] - y[n-1])
+        grid[n+1] = y[n] + eps()
+    end
 
     N = Hist1D(y; binedges=grid).bincounts
     pushfirst!(N, 0)
     N_cum = cumsum(N)
 
     if rule == "penb"
-        phi = (i, j) -> phi_penB(i,j, N_cum, grid)
+        phi = (i,j) -> phi_penB(i, j, N_cum, grid)
     elseif rule == "bayes"
-        phi = (i, j) -> phi_bayes(i,j, N_cum, grid)
+        phi = (i,j) -> phi_bayes(i, j, N_cum, grid)
+    elseif rule == "penr"
+        phi = (i,j) -> phi_penR(i, j, N_cum, grid, n)
+        #phi = (i,j) -> phi_penB(i, j, N_cum, grid)
     end
 
     optimal, ancestor = dynamic_algorithm(phi, n, k_max)
@@ -97,6 +113,10 @@ function histogram_irregular(x::AbstractArray; rule::String="penB", maxbins::Int
     elseif rule == "bayes"
         for k = 1:k_max
             psi[k] = logprior(k) - logabsbinomial(k_max-1, k-1)[1] + loggamma(1.0) - loggamma(1.0 + n)
+        end
+    elseif rule == "penr"
+        for k = 1:k_max
+            psi[k] = -logabsbinomial(k_max-1, k-1)[1] - k - log(k)^(2.5)
         end
     end
     k_opt = argmax(optimal + psi)
@@ -117,11 +137,12 @@ end
 
 
 function test()
-    y = rand(Normal(), 2*10^3)
-    H = histogram_irregular(y; rule="bayes")
-    p = plot(H)
+    x = rand(Normal(), 10^3)
+    H = histogram_irregular(x; rule="penr")
+    p = plot(H, alpha=0.5)
     t = LinRange(-3.0, 3.0, 1000)
     plot!(p, t, pdf.(Normal(), t))
+    #histogram!(x, normalize=:pdf, alpha=0.5)
     display(p)
 end
 

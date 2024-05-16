@@ -18,18 +18,18 @@ argument is not a positive integer. Defaults to `k_max = floor(Int, n/log(n))`
 is "bayes". Defaults to Jeffreys improper prior on the positive integers, p(k) ∝ 1/k
 ...
 """
-function histogram_regular(x::AbstractArray; rule::String="br", maxbins::Integer=-1, logprior=k->-log(k))
+function histogram_regular(x::AbstractArray; rule::String="br", maxbins::Integer=1000, logprior=k->-log(k))
     rule = lowercase(rule)
     if !(rule in ["aic", "bic", "br", "bayes", "mdl", "sc", "klcv", "nml"])
         rule = "br"
     end
 
     n = length(x)
-    if maxbins >= 1 
-        k_max = maxbins
-    else
-        k_max = max(floor(Int, n / log(n)), 10^3) # Default maximal number of bins
+    if maxbins < 1
+        maxbins = 10^3 # Default maximal number of bins
     end
+    k_max = min(floor(Int, n / log(n)), maxbins)
+    
     criterion = zeros(k_max) # Criterion to be maximized/minimized depending on the penalty
 
     # Scale data to the interval [0,1]:
