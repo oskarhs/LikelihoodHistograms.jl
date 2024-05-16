@@ -1,6 +1,8 @@
 using FHist, StatsBase, Plots, Distributions
 using SpecialFunctions
 
+include("greedy_grid.jl")
+
 function dynamic_algorithm(phi::Function, n::Int, k_max::Int)
     cum_weight = Matrix{Float64}(undef, n, k_max)
     ancestor = zeros(Int64, n, k_max)
@@ -47,61 +49,6 @@ function compute_bounds(ancestor, grid, k)
     end
     bounds = grid[L .+ 1]
     return bounds
-end
-
-
-# Function used to build a coarser grid using the greedy algorithm of Rozenholc et al.
-function greedy_grid(N_cum, finestgrid, n, gr_maxbins)
-
-    # Update increments between the values i and j
-    function compute_loglik_increments!(incr, i, j)
-        if finestgrid[i] < finestgrid[j]
-            # Log-likelihood contribution 
-            loglik_old = (N_cum[j] - N_cum[i]) * log((N_cum[j]-N_cum[i])/(n*(finestgrid[j]-finestgrid[i])))
-            @inbounds for l = (i+1):(j-1)
-                if isapprox(N_cum[l], N_cum[i]) || isapprox(N_cum[j], N_cum[l])
-                    incr[l] = 0.0
-                else
-                    loglik_new = (N_cum[l] - N_cum[i]) * log((N_cum[l]-N_cum[i])/(n*(finestgrid[l]-finestgrid[i]))) +
-                            (N_cum[j] - N_cum[l]) * log((N_cum[j]-N_cum[l])/(n*(finestgrid[j]-finestgrid[l])))
-                    incr[l] = loglik_new - loglik_old
-                end
-            end
-        end
-    end
-    grid_ind = fill(false, n+1) # Array of booleans storing which indices to use
-    grid_ind[1] = true
-    grid_ind[n+1] = true
-    incr = zeros(Float64, n+1) # Array of increments from splitting at index d at each step
-    incr[1] = -Inf # Would create a bin of lebesgue measure 0
-    incr[n+1] = -Inf
-
-    # First iteration
-    i = 1
-    j = n+1
-    compute_loglik_increments!(incr, i, j)
-    num_bins = 1
-
-    # Terminate when num_bins has reached the limit or 
-    # when increases to the log-likelihood are no longer possible
-    while num_bins < gr_maxbins && maximum(incr) > 0
-        # Update increments for indices in (i, d) and (d, j)
-        d = argmax(incr)
-        grid_ind[d] = true # Include finestgrid[d] in the grid
-        incr[d] = -Inf # Included in grid
-        num_bins = num_bins + 1
-
-        # Set i to maximal index < than d s.t. grid_ind[i] == true
-        i = findlast(grid_ind[1:d-1])
-        # Set j to minimal index > than d s.t. grid_ind[j] == true
-        j = findfirst(grid_ind[d+1:end]) + d
-
-        compute_loglik_increments!(incr, i, d)
-        compute_loglik_increments!(incr, d, j)
-    end
-    # Compute the grid we will use for the dynamic programming part
-    grid = finestgrid[grid_ind]
-    return grid
 end
 
 
@@ -152,18 +99,23 @@ function histogram_irregular(x::AbstractArray; rule::String="penB", right::Bool=
         finestgrid[n+1] = y[n] + eps()
     end
 
-
+    # Compute cell counts for the finest resolution grid
     N = Hist1D(y; binedges=finestgrid).bincounts
     pushfirst!(N, 0)
     N_cum = cumsum(N)
     if greedy
         gr_maxbins = max(floor(Int, n^(1.0/3.0)), 100)
-        grid = greedy_grid(N_cum, finestgrid, n, gr_maxbins)
+        if rule == "bayes"
+            grid = greedy_grid_bayes(N_cum, finestgrid, n, gr_maxbins, a)
+        else
+            grid = greedy_grid(N_cum, finestgrid, n, gr_maxbins)
+        end
         k_max = length(grid) - 1
+
+        # Update bin counts to the newly constructed grid
         N = Hist1D(y; binedges=grid).bincounts
         pushfirst!(N, 0)
         N_cum = cumsum(N)
-        #println(N_cum)
     else
         k_max = n
         grid = finestgrid
@@ -218,10 +170,12 @@ end
 
 
 function test()
-    x = rand(Laplace(), 10^4)
-    H, criterion_opt = histogram_irregular(x; rule="pena", greedy=true)
+    x = rand(Laplace(), 10^3)
+    H, criterion_opt = histogram_irregular(x; rule="bayes", greedy=true, logprior=k->0.0)
+    H1, criterion_opt = histogram_irregular(x; rule="penb", greedy=true)
     #println(H)
     p = plot(H, alpha=0.5)
+    plot!(p, H1, alpha=0.5)
     xlims!(-4.0, 4.0)
     t = LinRange(-4.0, 4.0, 1000)
     plot!(p, t, pdf.(Laplace(), t))
