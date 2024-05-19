@@ -1,5 +1,5 @@
 module LikelihoodHistograms
 
-# Write your package code here.
+include("histogram.jl")
 
 end
