@@ -104,9 +104,10 @@ function histogram_irregular(x::AbstractArray; rule::String="penB", right::Bool=
     pushfirst!(N, 0)
     N_cum = cumsum(N)
     if greedy
-        gr_maxbins = max(floor(Int, n^(1.0/3.0)), 100)
+        gr_maxbins = min(n, max(floor(Int, n^(1.0/3.0)), 100))
         if rule == "bayes"
-            grid = greedy_grid_bayes(N_cum, finestgrid, n, gr_maxbins, a)
+            #grid = greedy_grid_bayes(N_cum, finestgrid, n, gr_maxbins, a)
+            grid = greedy_grid(N_cum, finestgrid, n, gr_maxbins)
         else
             grid = greedy_grid(N_cum, finestgrid, n, gr_maxbins)
         end
@@ -170,17 +171,22 @@ end
 
 
 function test()
-    x = rand(Laplace(), 10^3)
-    H, criterion_opt = histogram_irregular(x; rule="bayes", greedy=true, logprior=k->0.0)
-    H1, criterion_opt = histogram_irregular(x; rule="penb", greedy=true)
-    #println(H)
+    n = 10^3
+    dist = Claw()
+    x = rand(dist, n)
+    H, criterion_opt = histogram_irregular(x; rule="penb", greedy=true)
+    H1, criterion_opt = histogram_irregular(x; rule="bayes", greedy=true, logprior=k->-log(k), a=1.0)
+    H1, criterion_opt = histogram_irregular(x; rule="bayes", greedy=true, logprior=k->-log(k), a=length(H1.weights)*0.5)
+
+    println(maximum(H.weights))
+    println(maximum(H1.weights))
     p = plot(H, alpha=0.5)
     plot!(p, H1, alpha=0.5)
     xlims!(-4.0, 4.0)
     t = LinRange(-4.0, 4.0, 1000)
-    plot!(p, t, pdf.(Laplace(), t))
+    plot!(p, t, pdf.(dist, t))
     #histogram!(x, normalize=:pdf, alpha=0.5)
     display(p)
 end
 
-test()
+#test()

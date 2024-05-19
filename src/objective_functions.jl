@@ -1,7 +1,7 @@
 using Distributions, SpecialFunctions
 
 
-# Unnormalized log-posterior with Geometric(τ) prior on k, Dirichlet(a/2) prior on p
+# Unnormalized log-posterior with Geometric(τ) prior on k, Dirichlet(ap_0) prior on p
 function logposterior_k(N, k, a, p0, n, logprior)
     logpost = loggamma(a) - loggamma(a + n) + n*log(k) + logprior(k)
     #logpost = loggamma(a) - loggamma(a + n) + n*log(k) - log(1+k)

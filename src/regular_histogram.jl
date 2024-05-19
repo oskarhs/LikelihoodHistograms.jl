@@ -1,6 +1,5 @@
 using Distributions, Random, FHist, SpecialFunctions, StatsBase, Plots
 
-include("objective_functions.jl")
 
 """
     histogram_regular(h::Hist1D, rule::Str="br", maxbins=Nothing, logprior=k->-log(k))
@@ -29,7 +28,7 @@ function histogram_regular(x::AbstractArray; rule::String="br", maxbins::Integer
         maxbins = 10^3 # Default maximal number of bins
     end
     k_max = min(floor(Int, n / log(n)), maxbins)
-    
+
     criterion = zeros(k_max) # Criterion to be maximized/minimized depending on the penalty
 
     # Scale data to the interval [0,1]:
@@ -83,24 +82,27 @@ function histogram_regular(x::AbstractArray; rule::String="br", maxbins::Integer
     k_opt = argmax(criterion)
     H_opt = convert(Histogram, Hist1D(x; binedges = xmin .+ (xmax-xmin)*LinRange(0,1,k_opt+1), overflow=true))
     if rule == "bayes"
-        H_opt.weights = k_opt * (H_opt.weights .+ 0.5) / (0.5*k_opt + n) # Estimated density
+        H_opt.weights = k_opt/(xmax-xmin) * (H_opt.weights .+ 0.5) / (0.5*k_opt + n) # Estimated density
     else
-        H_opt.weights = k_opt * H_opt.weights / n # Estimated density
+        H_opt.weights = k_opt/(xmax-xmin) * H_opt.weights / n # Estimated density
     end
     H_opt.isdensity = true
-    return H_opt
+    return H_opt, criterion[k_opt]
 end
 
 
 function test_reghist()
-    x = rand(Normal(), 10^7)
+    x = rand(Claw(), 10^3)
     #H = Hist1D(x)
     #plot(H)
-    H = histogram_regular(x; rule="bayes")
+    H = histogram_regular(x; rule="bayes")[1]
     println(length(H.weights))
-    H2 = histogram_regular(x; rule="bic")
+    H2 = histogram_regular(x; rule="br")[1]
     println(length(H2.weights))
     plot(H, alpha=0.5)
+    plot!(H2, alpha=0.5)
+    t = LinRange(-4.0, 4.0, 10000)
+    plot!(t, pdf.(Claw(), t))
 end
 
 test_reghist()
