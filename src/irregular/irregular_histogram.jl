@@ -1,4 +1,5 @@
 using FHist, StatsBase
+import Statistics.quantile
 import SpecialFunctions.loggamma, SpecialFunctions.logabsbinomial
 
 include("greedy_grid.jl")
