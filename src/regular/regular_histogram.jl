@@ -1,4 +1,4 @@
-using FHist, StatsBase, Plots
+using FHist, StatsBase
 
 include("objective_functions.jl")
 

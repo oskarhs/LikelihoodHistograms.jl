@@ -83,13 +83,11 @@ end
 
 # Objective (maximization) for regular histograms based on the l2cv criterion
 function compute_L2CV(N, k, n) 
-    function compute_L2CV(N, k, n)
-        L2CV = -2.0*k
-        @inbounds for i in eachindex(N)
-            L2CV = L2CV + k*(n+1)/n^2*sum(N[i]^2)
-        end
-        return L2CV
+    L2CV = -2.0*k
+    @inbounds for i in eachindex(N)
+        L2CV = L2CV + k*(n+1)/n^2*sum(N[i]^2)
     end
+    return L2CV
 end
 
 # Objective (maximization) for regular histograms based on Normalized Maximum Likelihood
