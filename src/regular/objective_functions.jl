@@ -93,7 +93,7 @@ function compute_L2CV(N, k, n)
 end
 
 # Objective (maximization) for regular histograms based on Normalized Maximum Likelihood
-function compute_NML(N, K, n)
+function compute_NML(N, k, n)
     NML = n*log(k) + 
           0.5*(k-1.0)*log(0.5*n) + log(sqrt(π)/gamma(0.5*k)) + 
           sqrt(2.0)*k*gamma(0.5*k)/(3.0*sqrt(n)*gamma(0.5*(k-1))) + 
