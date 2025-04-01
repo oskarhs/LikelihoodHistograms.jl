@@ -1,6 +1,7 @@
 import SpecialFunctions.loggamma
 
-# Function used to compute the 
+# Uses the greedy algorithm of Rozenholc et al. to construct a coarser grid to make the algorithm better suited for large datasets.
+# To be used prior to running the dynamic programming algorithm.
 function greedy_grid(N_cum, finestgrid, maxbins, gr_maxbins)
     # Update increments between the values i and j
     function compute_loglik_increments!(incr, i, j)
