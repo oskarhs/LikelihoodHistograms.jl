@@ -1,4 +1,4 @@
-using Distributions, Random, FHist, StatsBase, Plots
+using FHist, StatsBase, Plots
 
 include("objective_functions.jl")
 
@@ -137,6 +137,7 @@ function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", righ
     return H_opt, criterion[k_opt]
 end
 
+# Create regular grid with right- or left-inclusive intervals.
 function fill_edges!(edges, k, right)
     edges[1] = -eps()
     edges[k+1] = 1.0+eps()

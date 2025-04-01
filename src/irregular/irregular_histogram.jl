@@ -1,4 +1,4 @@
-using FHist, StatsBase
+using FHist, StatsBase, Statistics
 import SpecialFunctions.loggamma, SpecialFunctions.logabsbinomial
 
 include("greedy_grid.jl")
