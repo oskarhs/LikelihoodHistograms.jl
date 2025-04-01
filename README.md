@@ -17,7 +17,7 @@ Pkg.add("LikelihoodHistograms")
 
 ## Example usage
 
-This module exports the two functions `histogram_regular` and `histogram_irregular`, offering automatic histogram construction for a 1-dimensional data samples. A detailed exposition of all keyword arguments can be found by typing `?histogram_regular` and `?histogram_irregular` in the repl.
+This module exports the two functions `histogram_regular` and `histogram_irregular`, offering automatic histogram construction for 1-dimensional samples. A detailed exposition of all keyword arguments can be found by typing `?histogram_regular` and `?histogram_irregular` in the repl.
 
 ```julia
 julia> using LikelihoodHistograms, Plots, Random
@@ -61,10 +61,10 @@ A detailed description of the supported methods will be added at a later point i
     Our implementation uses the dynamical programming algorithm of Kanazawa (1988) together with the greedy search heuristic of Rozenholc et al. (2010) to build a histogram in linearithmic time, making this package an excellent option for histogram construction for large data sets.
 
 ## References
-Simensen, O. H. (2025). Random Histograms. University of Oslo.
+Simensen, O. H. (2025). _Random Histograms_. Master's thesis. University of Oslo.
 
-Rozenholc, Y., Mildenberger, T., & Gather, U. (2010). Combining regular and irregular histograms by penalized likelihood. Computational Statistics & Data Analysis, 54, 3313–3323. doi:10.1016/j.csda.2010.04.021
+Rozenholc, Y., Mildenberger, T., & Gather, U. (2010). Combining regular and irregular histograms by penalized likelihood. _Computational Statistics & Data Analysis_, 54, 3313–3323. doi: [10.1016/j.csda.2010.04.021](doi.org/10.1016/j.csda.2010.04.021)
 
-Kanazawa, Y. (1988). An optimal variable cell histogram. Communications in Statistics-Theory and Methods, 17, 1401–1422. doi:10.1080/03610928808829688
+Kanazawa, Y. (1988). An optimal variable cell histogram. _Communications in Statistics-Theory and Methods_, 17, 1401–1422. doi: [10.1080/03610928808829688](doi.org/10.1080/03610928808829688)
 
-Birgé, L., & Rozenholc, Y. (2006). How many bins should be put in a regular histogram. ESAIM: Probability and Statistics, 10, 24–45. doi:10.1051/ps:2006001
+Birgé, L., & Rozenholc, Y. (2006). How many bins should be put in a regular histogram. _ESAIM: Probability and Statistics_, 10, 24–45. doi: [10.1051/ps:2006001](doi.org/10.1051/ps:2006001)
