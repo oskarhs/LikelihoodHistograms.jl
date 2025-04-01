@@ -57,8 +57,8 @@ A detailed description of the supported methods will be added at a later point i
 
 ## Implementation
 
-- Irregular histograms
-    Our implementation uses the dynamical programming algorithm of Kanazawa (1988) together with the greedy search heuristic of Rozenholc et al. (2010) to build a histogram in linearithmic time, making this package an excellent option for histogram construction for large data sets.
+### Irregular histograms
+Our implementation uses the dynamical programming algorithm of Kanazawa (1988) together with the greedy search heuristic of Rozenholc et al. (2010) to build a histogram in linearithmic time, making this package an excellent option for histogram construction for large data sets.
 
 ## References
 Simensen, O. H. (2025). _Random Histograms_. Master's thesis. University of Oslo.
