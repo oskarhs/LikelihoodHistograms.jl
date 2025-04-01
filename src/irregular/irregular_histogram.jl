@@ -1,4 +1,4 @@
-using FHist, StatsBase, Statistics
+using FHist, StatsBase
 import SpecialFunctions.loggamma, SpecialFunctions.logabsbinomial
 
 include("greedy_grid.jl")
@@ -108,7 +108,7 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
         pushfirst!(N, 0)
         N_cum = cumsum(N)
     else
-        k_max = n
+        k_max = maxbins
         grid = finestgrid
     end
 
