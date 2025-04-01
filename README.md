@@ -9,10 +9,10 @@ Supports a variety of methods including those based on leave-one-out cross-valid
 The development of this package started with the writing of the Master's thesis "Random Histograms" (Simensen, 2025). Most notably, this package provides support for the regular and irregular random histogram models proposed in Simensen (2025), two fully Bayesian approaches to histogram construction. Since the algorithms used to fit this model can also be used to construct histograms based on other criteria, the package offers support for other goodness-of-fit criteria as well.
 
 ## Installation
-Installing the package is most easily done via Julia's builtin package manager `Pkg`.
+Installing the package is most easily done via Julia's builtin package manager `Pkg`. The repository is not as of yet part of the Julia general registry, so installing directly from github is the best option for now.
 ```julia
 using Pkg
-Pkg.add("LikelihoodHistograms")
+Pkg.add(url="https://github.com/oskarhs/LikelihoodHistograms.jl.git")
 ```
 
 ## Example usage
