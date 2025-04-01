@@ -60,4 +60,12 @@ A detailed description of the supported methods will be added at a later point i
 
 
 ## References
+References
+
 Simensen, O. H. (2025). Random Histograms. University of Oslo.
+
+Rozenholc, Y., Mildenberger, T., & Gather, U. (2010). Combining regular and irregular histograms by penalized likelihood. Computational Statistics & Data Analysis, 54, 3313–3323. doi:10.1016/j.csda.2010.04.021
+
+Kanazawa, Y. (1988). An optimal variable cell histogram. Communications in Statistics-Theory and Methods, 17, 1401–1422. doi:10.1080/03610928808829688
+
+Birgé, L., & Rozenholc, Y. (2006). How many bins should be put in a regular histogram. ESAIM: Probability and Statistics, 10, 24–45. doi:10.1051/ps:2006001
