@@ -1,7 +1,12 @@
 name = "LikelihoodHistograms"
 uuid = "0bf0ee65-3559-4d1e-a282-1b0e88839781"
 authors = ["Oskar Høgberg Simensen"]
-version = "1.0.0-DEV"
+version = "0.1.0-alpha"
+
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+FHist = "68837c9b-b678-4cd5-9925-8a54edc8f695"
+SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [compat]
 julia = "1.6.7"

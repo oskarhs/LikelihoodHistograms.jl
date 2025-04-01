@@ -16,7 +16,7 @@ Currently only supports uniform prior centering.
 - `right`: Boolean indicating whether the drawn intervals should be right-inclusive or not. Defaults to `true`.
 - `maxbins`: The maximal number of bins to be considered by the optimization criterion. Ignored if the specified argument is not a positive integer. Defaults to `maxbins=1000`
 - `logprior`: Unnormalized logprior distribution of the number k of bins. Only used in the case where the supplied rule is `"bayes"`. Defaults to a uniform prior.
-- `a`: Specifies Dirichlet concentration parameter in the Bayesian histogram model. Can either be a fixed positive number or a function computing aₖ for different values of k. Defaults to ``1.0` if not supplied. Uses default if suppled value is negative.
+- `a`: Specifies Dirichlet concentration parameter in the Bayesian histogram model. Can either be a fixed positive number or a function computing aₖ for different values of k. Defaults to `1.0` if not supplied. Uses default if suppled value is negative.
 
 # Examples
 ```
@@ -146,24 +146,3 @@ function fill_edges!(edges, k, right)
         edges[2:k] = LinRange(1.0/k-eps(), 1.0-1.0/k-eps(), k-1)
     end
 end
-
-
-function test_reghist()
-    dist = Claw()
-    x = rand(dist, 5000)
-    #H = Hist1D(x)
-    #plot(H)
-    H = histogram_regular(x; rule="bayes", logprior=k->0.0, maxbins=1000, a=k->0.5*k)[1]
-    println(length(H.weights))
-
-    H2 = histogram_regular(x; right=true, rule="aic")[1]
-    println(length(H2.weights))
-
-    plot(H, alpha=0.5)
-    plot!(H2, alpha=0.5)
-    t = LinRange(-4.0, 4.0, 10000)
-    plot!(t, pdf.(dist, t))
-end
-
-
-test_reghist()
