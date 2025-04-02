@@ -1,4 +1,4 @@
-module LikelihoodHistograms
+module AutoHist
 
 export histogram_regular, histogram_irregular
 
