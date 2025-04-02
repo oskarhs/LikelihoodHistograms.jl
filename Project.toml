@@ -1,4 +1,4 @@
-name = "LikelihoodHistograms"
+name = "AutoHist"
 uuid = "0bf0ee65-3559-4d1e-a282-1b0e88839781"
 authors = ["Oskar Høgberg Simensen"]
 version = "0.1.0-alpha"
