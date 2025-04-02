@@ -2,11 +2,12 @@
 
 [![Build Status](https://github.com/oskarhs/AutoHist.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/oskarhs/AutoHist.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 
-A pure Julia implementation of automatic regular and irregular histogram construction based on maximizing a goodness-of-fit criterion.
-Supports a variety of methods including those based on leave-one-out cross-validiation, penalized maximum likelihood and fully Bayesian approaches.
+A pure Julia implementation of automatic regular and irregular histogram methods based on maximizing a goodness-of-fit criterion.
 
 ## Introduction
-The development of this package started with the writing of the Master's thesis "Random Histograms" (Simensen, 2025). Most notably, this package provides support for the regular and irregular random histogram models proposed in Simensen (2025), two fully Bayesian approaches to histogram construction. Since the algorithms used to fit this model can also be used to construct histograms based on other criteria, the package offers support for other goodness-of-fit criteria as well.
+Most default histogram plotting software only support regular automatic histogram procedures and use very simple plug-in rules to compute the the number of bins, frequently leading to poor density estimates for non-normal data (cf. Birgé and Rozenholc (2006), Simensen (2025)). The purpose of this software package is to offer the user a fast implementation of more sophisticated regular and irregular histogram procedures. Our package supports a variety of methods including those based on leave-one-out cross-validiation, penalized maximum likelihood and fully Bayesian approaches.
+
+The development of this package started with the writing of the Master's thesis "Random Histograms" (Simensen, 2025). Notably, this package provides support for the regular and irregular random histogram models proposed in Simensen (2025), two fully Bayesian approaches to histogram construction.
 
 This module exports the two functions `histogram_regular` and `histogram_irregular`, offering automatic histogram construction for 1-dimensional samples. A detailed exposition of all keyword arguments can be found by typing `?histogram_regular` and `?histogram_irregular` in the repl.
 
