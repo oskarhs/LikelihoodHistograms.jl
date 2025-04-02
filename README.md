@@ -8,6 +8,8 @@ Supports a variety of methods including those based on leave-one-out cross-valid
 ## Introduction
 The development of this package started with the writing of the Master's thesis "Random Histograms" (Simensen, 2025). Most notably, this package provides support for the regular and irregular random histogram models proposed in Simensen (2025), two fully Bayesian approaches to histogram construction. Since the algorithms used to fit this model can also be used to construct histograms based on other criteria, the package offers support for other goodness-of-fit criteria as well.
 
+This module exports the two functions `histogram_regular` and `histogram_irregular`, offering automatic histogram construction for 1-dimensional samples. A detailed exposition of all keyword arguments can be found by typing `?histogram_regular` and `?histogram_irregular` in the repl.
+
 ## Installation
 Installing the package is most easily done via Julia's builtin package manager `Pkg`. The repository is not as of yet part of the Julia general registry, so installing directly from github is the best option for now.
 ```julia
@@ -17,11 +19,11 @@ Pkg.add(url="https://github.com/oskarhs/LikelihoodHistograms.jl.git")
 
 ## Example usage
 
-This module exports the two functions `histogram_regular` and `histogram_irregular`, offering automatic histogram construction for 1-dimensional samples. A detailed exposition of all keyword arguments can be found by typing `?histogram_regular` and `?histogram_irregular` in the repl.
+The following code snippet shows an example where an automatic regular histogram and an automatic irregular histogram are fitted to a normal random sample, and the resulting histograms are plotted.
 
 ```julia
-julia> using LikelihoodHistograms, Plots, Random
-julia> x = randn(Xoshiro(5960), 10^7);
+julia> using LikelihoodHistograms, Plots
+julia> x = randn(10^6);
 julia> H1, _ = histogram_regular(x);
 julia> plot(H1)
 
