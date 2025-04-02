@@ -1,6 +1,6 @@
-# LikelihoodHistograms
+# AutoHist.jl
 
-[![Build Status](https://github.com/oskarhs/LikelihoodHistograms.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/oskarhs/LikelihoodHistograms.jl/actions/workflows/CI.yml?query=branch%3Amaster)
+[![Build Status](https://github.com/oskarhs/AutoHist.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/oskarhs/AutoHist.jl/actions/workflows/CI.yml?query=branch%3Amaster)
 
 A pure Julia implementation of automatic regular and irregular histogram construction based on maximizing a goodness-of-fit criterion.
 Supports a variety of methods including those based on leave-one-out cross-validiation, penalized maximum likelihood and fully Bayesian approaches.
@@ -14,7 +14,7 @@ This module exports the two functions `histogram_regular` and `histogram_irregul
 Installing the package is most easily done via Julia's builtin package manager `Pkg`. The repository is not as of yet part of the Julia general registry, so installing directly from github is the best option for now.
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/oskarhs/LikelihoodHistograms.jl.git")
+Pkg.add(url="https://github.com/oskarhs/AutoHist.jl.git")
 ```
 
 ## Example usage
