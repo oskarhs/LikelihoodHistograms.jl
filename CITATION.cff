@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "Cite this paper whenever AutoHist.jl played an important role in your research"
 authors:
 - family-names: "Simensen"
-  given-names: "Oskar, Høgberg"
+  given-names: "Oskar Høgberg"
   orcid: "https://orcid.org/0009-0009-5056-7324"
 title: "AutoHist.jl: A pure Julia library for fast automatic histogram construction"
 version: "v0.1.0-alpha"
