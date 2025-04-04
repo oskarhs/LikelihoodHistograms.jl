@@ -6,7 +6,7 @@ include("greedy_grid.jl")
 include("dynamic_algorithm.jl")
 
 """
-    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0)
+    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0, prior_cdf::Function=x->x)
 
 Create an irregular histogram based on optimization of a criterion based on Bayesian probability, penalized likelihood or LOOCV.
 Returns a tuple where the first argument is a StatsBase.Histogram object, the second the value of the maxinized criterion.
@@ -33,7 +33,8 @@ julia> H2, criterion2 = histogram_irregular(x; grid="quantile", logprior=k->-log
 """
 function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", grid::String="data", 
                             right::Bool=true, greedy::Bool=true, maxbins::Int=-1, 
-                            use_min_length::Bool=false, logprior::Function=k->0.0, a::Real=1.0)
+                            use_min_length::Bool=false, logprior::Function=k->0.0, a::Real=1.0,
+                            prior_cdf::Function=t->t)
     rule = lowercase(rule)
     if !(rule in ["pena", "penb", "penr", "bayes", "klcv", "l2cv", "nml"])
         rule = "bayes" # Set penalty to default
@@ -116,7 +117,7 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
     if rule in ["pena", "penb", "nml"]
         phi = (i,j) -> phi_penB(i, j, N_cum, grid)
     elseif rule == "bayes"
-        phi = (i,j) -> phi_bayes(i, j, N_cum, grid, a)
+        phi = (i,j) -> phi_bayes(i, j, N_cum, grid, a, prior_cdf)
     elseif rule == "penr"
         phi = (i,j) -> phi_penR(i, j, N_cum, grid, n)
     elseif rule == "klcv"

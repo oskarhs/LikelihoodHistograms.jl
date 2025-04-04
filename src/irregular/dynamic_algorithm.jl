@@ -53,10 +53,11 @@ function phi_penB(i, j, N_cum, grid)
 end
 
 # Φ corresponding to Bayesian histogram with fixed concentration parameter a (not dep. on k)
-function phi_bayes(i, j, N_cum, grid, a)
+function phi_bayes(i, j, N_cum, grid, a, prior_cdf)
     @inbounds N_bin = N_cum[j] - N_cum[i]
     @inbounds len_bin = grid[j] - grid[i] # Note: p0 = len_bin on the interval 0-1
-    contrib = loggamma(a*len_bin + N_bin) - loggamma(a*len_bin) - N_bin * log(len_bin)
+    a_int = a * (prior_cdf(grid[j]) - prior_cdf(grid[i]))
+    contrib = loggamma(a_int + N_bin) - loggamma(a_int) - N_bin * log(len_bin)
     return contrib
 end
 
