@@ -6,11 +6,10 @@ include("greedy_grid.jl")
 include("dynamic_algorithm.jl")
 
 """
-    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0, prior_cdf::Function=x->x)
+    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0, prior_cdf::Function=t->t)
 
 Create an irregular histogram based on optimization of a criterion based on Bayesian probability, penalized likelihood or LOOCV.
 Returns a tuple where the first argument is a StatsBase.Histogram object, the second the value of the maxinized criterion.
-Currently only supports uniform prior centering.
 
 # Arguments
 - `x`: 1D vector of data for which a histogram is to be constructed.
@@ -22,6 +21,7 @@ Currently only supports uniform prior centering.
 - `use_min_length`: Boolean indicating whether or not to impose a restriction on the minimum bin length of the histogram. If set to true, the smallest allowed bin length is set to `(maximum(x)-minimum(x))/n*log(n)^(1.5)`.
 - `logprior`: Unnormalized logprior distribution for the number k of bins. Defaults to a uniform prior. Only used in when `rule="bayes"`.
 - `a`: Dirichlet concentration parameter in the Bayesian irregular histogram model. Set to the default value (1.0) if the supplied value is not a positive real number. Only used when `rule="bayes"`.
+- `prior_cdf`: Initial guess of the true density. Defaults to the uniform distribution on [`minimum(x)`, `maximum(x)`]. Note that if the prior guess is not close to the underlying distribution, the resulting density estimates can be quite poor.
 
 # Examples
 ```

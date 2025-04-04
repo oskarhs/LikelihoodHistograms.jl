@@ -3,11 +3,10 @@ using FHist, StatsBase
 include("objective_functions.jl")
 
 """
-    histogram_regular(x::AbstractVector{<:Real}; rule::Str="bayes", right::Bool=true, maxbins::Int=1000, logprior::Function=k->0.0, a::Union{Real,Function}=1.0)
+    histogram_regular(x::AbstractVector{<:Real}; rule::Str="bayes", right::Bool=true, maxbins::Int=1000, logprior::Function=k->0.0, a::Union{Real,Function}=1.0, prior_cdf::Function=t->t)
 
 Create a regular histogram based on optimization criterion from Bayesian probability, penalized likelihood or LOOCV.
 Returns a tuple where the first argument is a StatsBase.Histogram object, the second the value of the maxinized criterion.
-Currently only supports uniform prior centering.
 
 ...
 # Arguments
@@ -17,6 +16,8 @@ Currently only supports uniform prior centering.
 - `maxbins`: The maximal number of bins to be considered by the optimization criterion. Ignored if the specified argument is not a positive integer. Defaults to `maxbins=1000`
 - `logprior`: Unnormalized logprior distribution of the number k of bins. Only used in the case where the supplied rule is `"bayes"`. Defaults to a uniform prior.
 - `a`: Specifies Dirichlet concentration parameter in the Bayesian histogram model. Can either be a fixed positive number or a function computing aₖ for different values of k. Defaults to `1.0` if not supplied. Uses default if suppled value is negative.
+- `prior_cdf`: Initial guess of the true density. Defaults to the uniform distribution on [`minimum(x)`, `maximum(x)`]. Note that if the prior guess is not close to the underlying distribution, the resulting density estimates can be quite poor.
+
 
 # Examples
 ```
@@ -26,7 +27,7 @@ julia> H2, criterion2 = histogram_regular(x; logprior=k->-log(k), a=k->0.5*k)
 ```
 ...
 """
-function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", right::Bool=true, maxbins::Int=1000, logprior::Function=k->0.0, a::Union{Real,Function}=1.0)
+function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", right::Bool=true, maxbins::Int=1000, logprior::Function=k->0.0, a::Union{Real,Function}=1.0, prior_cdf::Function=t->t)
     rule = lowercase(rule)
     if !(rule in ["aic", "bic", "br", "bayes", "mdl", "sc", "klcv", "nml", "l2cv"])
         rule = "bayes"
@@ -83,7 +84,7 @@ function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", righ
             edges = Array{Float64}(undef, k+1)
             fill_edges!(edges, k, right)
             N = Hist1D(z; binedges = edges) |> bincounts
-            criterion[k] = logposterior_k(N, k, aₖ, ones(k)/k, n, logprior)
+            criterion[k] = logposterior_k(N, k, aₖ, n, logprior, prior_cdf)
         end
     elseif rule == "mdl"
         for k = 1:k_max

@@ -1,10 +1,11 @@
 import SpecialFunctions.loggamma
 
 # Unnormalized log-posterior with Geometric(τ) prior on k, Dirichlet(ap_0) prior on p
-function logposterior_k(N, k, a, p0, n, logprior)
+function logposterior_k(N, k, a, n, logprior, prior_cdf)
     logpost = loggamma(a) - loggamma(a + n) + n*log(k) + logprior(k)
     @inbounds for j = 1:k
-        logpost = logpost + loggamma(a*p0[j] + N[j]) - loggamma(a*p0[j])
+        a_int = a * (prior_cdf(j/k) - prior_cdf((j-1.0)/k))
+        logpost = logpost + loggamma(a_int + N[j]) - loggamma(a_int)
     end
     return logpost
 end
