@@ -1,12 +1,13 @@
-using FHist, StatsBase
+using StatsBase
 import Statistics.quantile
 import SpecialFunctions.loggamma, SpecialFunctions.logabsbinomial
 
 include("greedy_grid.jl")
 include("dynamic_algorithm.jl")
+include("utils.jl")
 
 """
-    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0, prior_cdf::Function=t->t)
+    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0)
 
 Create an irregular histogram based on optimization of a criterion based on Bayesian probability, penalized likelihood or LOOCV.
 Returns a tuple where the first argument is a StatsBase.Histogram object, the second the value of the maxinized criterion.
@@ -21,7 +22,6 @@ Returns a tuple where the first argument is a StatsBase.Histogram object, the se
 - `use_min_length`: Boolean indicating whether or not to impose a restriction on the minimum bin length of the histogram. If set to true, the smallest allowed bin length is set to `(maximum(x)-minimum(x))/n*log(n)^(1.5)`.
 - `logprior`: Unnormalized logprior distribution for the number k of bins. Defaults to a uniform prior. Only used in when `rule="bayes"`.
 - `a`: Dirichlet concentration parameter in the Bayesian irregular histogram model. Set to the default value (1.0) if the supplied value is not a positive real number. Only used when `rule="bayes"`.
-- `prior_cdf`: Initial guess of the true density. Defaults to the uniform distribution on [`minimum(x)`, `maximum(x)`]. Note that if the prior guess is not close to the underlying distribution, the resulting density estimates can be quite poor.
 
 # Examples
 ```
@@ -33,8 +33,7 @@ julia> H2, criterion2 = histogram_irregular(x; grid="quantile", logprior=k->-log
 """
 function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", grid::String="data", 
                             right::Bool=true, greedy::Bool=true, maxbins::Int=-1, 
-                            use_min_length::Bool=false, logprior::Function=k->0.0, a::Real=1.0,
-                            prior_cdf::Function=t->t)
+                            use_min_length::Bool=false, logprior::Function=k->0.0, a::Real=1.0)
     rule = lowercase(rule)
     if !(rule in ["pena", "penb", "penr", "bayes", "klcv", "l2cv", "nml"])
         rule = "bayes" # Set penalty to default
@@ -64,6 +63,7 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
     # Calculate gridpoints (left-open grid, breaks at data points)
     # right == true means to include observation in the right endpoint, i.e. right-closed
     finestgrid = Array{Float64}(undef, maxbins+1)
+    N_cum = zeros(Float64, length(finestgrid)) # cumulative cell counts
     if grid == "data"
         sort!(y)
         if right
@@ -75,14 +75,12 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
             finestgrid[n] = 0.5 * (y[n] - y[n-1])
             finestgrid[n+1] = y[n] + eps()
         end
+        N_cum[2:end] = cumsum(bin_irregular(y, finestgrid, right))
     elseif grid == "regular"
-        if right
-            finestgrid[1] = -eps()
-            finestgrid[2:end] = collect(LinRange(1.0/maxbins+eps(), 1.0+eps(), maxbins))
-        else 
-            finestgrid[1:end-1] = collect(LinRange(-eps(), 1.0-1.0/maxbins-eps(), maxbins))
-            finestgrid[end] = 1.0+eps()
-        end
+        N_cum[2:end] = cumsum(bin_regular(y, 0.0, 1.0, maxbins, right))
+        finestgrid[1:end] = LinRange(0.0, 1.0, maxbins+1)
+        finestgrid[1] = -eps()
+        finestgrid[end] = 1.0+eps()
     elseif grid == "quantile"
         sort!(y)
         finestgrid[1] = -eps()
@@ -92,11 +90,12 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
         else 
             finestgrid[2:end-1] = quantile(y, LinRange(1.0/maxbins, 1.0-1.0/maxbins, maxbins-1); sorted=true) .- eps()
         end
+        N_cum[2:end] = cumsum(bin_irregular(y, finestgrid, right))
     end
 
     # Compute cell counts for the finest resolution grid
-    N_cum = zeros(Int64, length(finestgrid))
-    N_cum[2:end] = cumsum(Hist1D(y; binedges=finestgrid).bincounts)
+    #N_cum = zeros(Int64, length(finestgrid))
+    #N_cum[2:end] = cumsum(Hist1D(y; binedges=finestgrid).bincounts)
     if greedy
         gr_maxbins = min(maxbins, max(floor(Int, (log(n)*n)^(1.0/3.0)), 100))
         grid_ind = greedy_grid(N_cum, finestgrid, maxbins, gr_maxbins)
@@ -106,9 +105,9 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
         chosen_ind = findall(grid_ind)
 
         # Update bin counts to the newly constructed grid
-        N = Hist1D(y; binedges=grid).bincounts
-        pushfirst!(N, 0)
-        N_cum = cumsum(N)
+        N_cum = zeros(Float64, length(grid))
+        N_cum[2:end] = cumsum(bin_irregular(y, grid, right))
+
     else
         k_max = maxbins
         grid = finestgrid
@@ -117,7 +116,7 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
     if rule in ["pena", "penb", "nml"]
         phi = (i,j) -> phi_penB(i, j, N_cum, grid)
     elseif rule == "bayes"
-        phi = (i,j) -> phi_bayes(i, j, N_cum, grid, a, prior_cdf)
+        phi = (i,j) -> phi_bayes(i, j, N_cum, grid, a)
     elseif rule == "penr"
         phi = (i,j) -> phi_penR(i, j, N_cum, grid, n)
     elseif rule == "klcv"
@@ -167,7 +166,8 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
 
     bin_edges_norm = compute_bounds(ancestor, grid, k_opt)
     bin_edges =  xmin .+ (xmax - xmin) * bin_edges_norm
-    H = convert(Histogram, Hist1D(x; binedges=bin_edges))
+    N = bin_irregular(x, bin_edges, right)
+    H = Histogram(bin_edges, N, :right, true)
     p0 = bin_edges_norm[2:end] - bin_edges_norm[1:end-1]
     if rule == "bayes"
         H.weights = (H.weights .+ a*p0) ./ ((n + a)*(bin_edges[2:end] - bin_edges[1:end-1]))
