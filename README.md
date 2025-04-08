@@ -23,7 +23,7 @@ Pkg.add(url="https://github.com/oskarhs/AutoHist.jl.git")
 The following code snippet shows an example where an automatic regular histogram and an automatic irregular histogram are fitted to a normal random sample, and the resulting histograms are plotted.
 
 ```julia
-julia> using LikelihoodHistograms, Plots
+julia> using AutoHist, Plots
 julia> x = randn(10^6);
 julia> H1, _ = histogram_regular(x);
 julia> plot(H1)
