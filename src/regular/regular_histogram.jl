@@ -1,10 +1,7 @@
 using StatsBase
 
-#include("objective_functions.jl")
-#include(joinpath(@__DIR__, "..", "utils.jl"))
-
 """
-    histogram_regular(x::AbstractVector{<:Real}; rule::Str="bayes", right::Bool=true, maxbins::Int=1000, logprior::Function=k->0.0, a::Union{Real,Function}=1.0)
+    histogram_regular(x::AbstractVector{<:Real}; rule::Str="bayes", right::Bool=true, maxbins::Int=1000, support::Tuple{Real,Real}=(-Inf,Inf), logprior::Function=k->0.0, a::Union{Real,Function}=1.0)
 
 Create a regular histogram based on optimization criterion from Bayesian probability, penalized likelihood or LOOCV.
 Returns a tuple where the first argument is a StatsBase.Histogram object, the second the value of the maxinized criterion.
@@ -15,6 +12,7 @@ Returns a tuple where the first argument is a StatsBase.Histogram object, the se
 - `rule`: The criterion used to determine the optimal number of bins. Defaults to the method Bayesian method of Simensen et al. (2025)
 - `right`: Boolean indicating whether the drawn intervals should be right-inclusive or not. Defaults to `true`.
 - `maxbins`: The maximal number of bins to be considered by the optimization criterion. Ignored if the specified argument is not a positive integer. Defaults to `maxbins=1000`
+- `support`: Tuple specifying the the support of the histogram estimate. If the first element is -Inf, then `minimum(x)` is taken as the leftmost cutpoint. Likewise, if the second elemen is `Inf`, then the rightmost cutpoint is `maximum(x)`. Default value is `(-Inf, Inf)`, which estimates the support of the data.
 - `logprior`: Unnormalized logprior distribution of the number k of bins. Only used in the case where the supplied rule is `"bayes"`. Defaults to a uniform prior.
 - `a`: Specifies Dirichlet concentration parameter in the Bayesian histogram model. Can either be a fixed positive number or a function computing aₖ for different values of k. Defaults to `1.0` if not supplied. Uses default if suppled value is negative.
 
@@ -26,7 +24,7 @@ julia> H2, criterion2 = histogram_regular(x; logprior=k->-log(k), a=k->0.5*k)
 ```
 ...
 """
-function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", right::Bool=true, maxbins::Int=1000, logprior::Function=k->0.0, a::Union{Real,Function}=1.0)
+function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", right::Bool=true, maxbins::Int=1000, support::Tuple{Real,Real}=(-Inf,Inf), logprior::Function=k->0.0, a::Union{Real,Function}=1.0)
     rule = lowercase(rule)
     if !(rule in ["aic", "bic", "br", "bayes", "mdl", "sc", "klcv", "nml", "l2cv"])
         rule = "bayes"
@@ -52,8 +50,16 @@ function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", righ
     criterion = zeros(k_max) # Criterion to be maximized depending on the specified rule
 
     # Scale data to the interval [0,1]:
-    xmin = minimum(x)
-    xmax = maximum(x)
+    if support[1] == -Inf
+        xmin = minimum(x) 
+    else
+        xmin = support[1]
+    end
+    if support[2] == Inf
+        xmax = maximum(x)
+    else 
+        xmax = support[2]
+    end
     z = @. (x - xmin) / (xmax - xmin)
 
     if rule == "aic"
@@ -120,14 +126,3 @@ function histogram_regular(x::AbstractVector{<:Real}; rule::String="bayes", righ
     end
     return H_opt, criterion[k_opt]
 end
-
-# Create regular grid with right- or left-inclusive intervals.
-#= function fill_edges!(edges, k, right)
-    edges[1] = -eps()
-    edges[k+1] = 1.0+eps()
-    if right
-        edges[2:k] = LinRange(1.0/k+eps(), 1.0-1.0/k+eps(), k-1)
-    else
-        edges[2:k] = LinRange(1.0/k-eps(), 1.0-1.0/k-eps(), k-1)
-    end
-end =#

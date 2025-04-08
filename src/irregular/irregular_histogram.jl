@@ -7,7 +7,7 @@ import SpecialFunctions.loggamma, SpecialFunctions.logabsbinomial
 #include(joinpath(@__DIR__, "..", "utils.jl"))
 
 """
-    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0)
+    histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, support::Tuple{Real,Real}=(-Inf,Inf), use_min_length::Bool=false, logprior::Function=k->0.0, a::Real=1.0)
 
 Create an irregular histogram based on optimization of a criterion based on Bayesian probability, penalized likelihood or LOOCV.
 Returns a tuple where the first argument is a StatsBase.Histogram object, the second the value of the maxinized criterion.
@@ -19,6 +19,7 @@ Returns a tuple where the first argument is a StatsBase.Histogram object, the se
 - `right`: Boolean indicating whether the drawn intervals should be right-inclusive or not. Defaults to `true`.
 - `greedy`: Boolean indicating whether or not the greedy binning strategy of Rozenholc et al. (2006) should be used prior to running the dynamical programming algorithm. Defaults to `true`. The algorithm can be quite slow for large datasets when this keyword is set to `false`.
 - `maxbins`: The maximal number of bins to be considered by the optimization criterion, only used if grid is set to "regular" or "quantile". Defaults to `maxbins=min(4*n/log(n)^2, 1000)`. If the specified argument is not a positive integer, the default value is used.
+- `support`: Tuple specifying the the support of the histogram estimate. If the first element is -Inf, then `minimum(x)` is taken as the leftmost cutpoint. Likewise, if the second elemen is `Inf`, then the rightmost cutpoint is `maximum(x)`. Default value is `(-Inf, Inf)`, which estimates the support of the data.
 - `use_min_length`: Boolean indicating whether or not to impose a restriction on the minimum bin length of the histogram. If set to true, the smallest allowed bin length is set to `(maximum(x)-minimum(x))/n*log(n)^(1.5)`.
 - `logprior`: Unnormalized logprior distribution for the number k of bins. Defaults to a uniform prior. Only used in when `rule="bayes"`.
 - `a`: Dirichlet concentration parameter in the Bayesian irregular histogram model. Set to the default value (1.0) if the supplied value is not a positive real number. Only used when `rule="bayes"`.
@@ -27,12 +28,12 @@ Returns a tuple where the first argument is a StatsBase.Histogram object, the se
 ```
 julia> x = [0.037, 0.208, 0.189, 0.656, 0.45, 0.846, 0.986, 0.751, 0.249, 0.447]
 julia> H1, criterion1 = histogram_irregular(x)
-julia> H2, criterion2 = histogram_irregular(x; grid="quantile", logprior=k->-log(k), a=sqrt(10))
+julia> H2, criterion2 = histogram_irregular(x; grid="quantile", support=(0.0, 1.0), logprior=k->-log(k), a=sqrt(10))
 ```
 ...
 """
 function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", grid::String="data", 
-                            right::Bool=true, greedy::Bool=true, maxbins::Int=-1, 
+                            right::Bool=true, greedy::Bool=true, maxbins::Int=-1, support::Tuple{Real,Real}=(-Inf,Inf),
                             use_min_length::Bool=false, logprior::Function=k->0.0, a::Real=1.0)
     rule = lowercase(rule)
     if !(rule in ["pena", "penb", "penr", "bayes", "klcv", "l2cv", "nml"])
@@ -49,8 +50,16 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
         grid = "data"
     end
 
-    xmin = minimum(x)
-    xmax = maximum(x)
+    if support[1] == -Inf
+        xmin = minimum(x) 
+    else
+        xmin = support[1]
+    end
+    if support[2] == Inf
+        xmax = maximum(x)
+    else 
+        xmax = support[2]
+    end
     y = @. (x - xmin) / (xmax - xmin)
     n = length(x)
 
@@ -67,13 +76,15 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
     if grid == "data"
         sort!(y)
         if right
-            finestgrid[1] = y[1] - eps()
+            finestgrid[1] = - eps()
             finestgrid[2] = 0.5*(y[1]+y[2])
-            finestgrid[3:n+1] = y[2:n] .+ eps()
+            finestgrid[3:n] = y[2:n-1] .+ eps()
+            finestgrid[n+1] = 1.0 + eps()
         else
-            finestgrid[1:n-1] = y[1:n-1] .- eps()
+            finestgrid[1] = -eps()
+            finestgrid[2:n-1] = y[2:n-1] .- eps()
             finestgrid[n] = 0.5 * (y[n] - y[n-1])
-            finestgrid[n+1] = y[n] + eps()
+            finestgrid[n+1] = 1.0 + eps()
         end
         N_cum[2:end] = cumsum(bin_irregular(y, finestgrid, right))
     elseif grid == "regular"
