@@ -4,7 +4,7 @@ import SpecialFunctions.loggamma, SpecialFunctions.logabsbinomial
 
 include("greedy_grid.jl")
 include("dynamic_algorithm.jl")
-include("utils.jl")
+include(joinpath(@__DIR__, "..", "utils.jl"))
 
 """
     histogram_irregular(x::AbstractVector{<:Real}; rule::Str="bayes", grid::String="data", right::Bool=true, greedy::Bool=true, maxbins::Int=-1, logprior::Function=k->0.0, a::Real=1.0)
@@ -167,7 +167,11 @@ function histogram_irregular(x::AbstractVector{<:Real}; rule::String="bayes", gr
     bin_edges_norm = compute_bounds(ancestor, grid, k_opt)
     bin_edges =  xmin .+ (xmax - xmin) * bin_edges_norm
     N = bin_irregular(x, bin_edges, right)
-    H = Histogram(bin_edges, N, :right, true)
+    if right
+        H = Histogram(bin_edges, N, :right, true)
+    else
+        H = Histogram(bin_edges, N, :left, true)
+    end
     p0 = bin_edges_norm[2:end] - bin_edges_norm[1:end-1]
     if rule == "bayes"
         H.weights = (H.weights .+ a*p0) ./ ((n + a)*(bin_edges[2:end] - bin_edges[1:end-1]))

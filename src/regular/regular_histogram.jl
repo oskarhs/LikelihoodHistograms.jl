@@ -1,7 +1,7 @@
 using StatsBase
 
 include("objective_functions.jl")
-include("utils.jl")
+include(joinpath(@__DIR__, "..", "utils.jl"))
 
 """
     histogram_regular(x::AbstractVector{<:Real}; rule::Str="bayes", right::Bool=true, maxbins::Int=1000, logprior::Function=k->0.0, a::Union{Real,Function}=1.0)
